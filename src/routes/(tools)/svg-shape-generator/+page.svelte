@@ -163,7 +163,7 @@
   .resize-handle {
     width: 10px;
     height: 10px;
-    background: #000;
+    background: #000000;
     position: absolute;
     right: 0;
     bottom: 0;
