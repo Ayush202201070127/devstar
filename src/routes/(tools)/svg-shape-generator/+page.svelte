@@ -2,11 +2,12 @@
   import { writable } from 'svelte/store';
 
   let color = '#FF0066';
-  let svgShape = 'M150 0 L75 200 L225 200 Z'; // Default shape
+  let svgShape = 'M150 0 L75 200 L225 200 Z'; 
   const shapes = writable([]);
   let selectedShapeIndex = null;
-  let size = 100; // Default size
-  let showDownloadOptions = false; // State for download options visibility
+  let size = 100; 
+  let rotation = 0; 
+  let showDownloadOptions = false; 
 
   let dragState = {
     isDragging: false,
@@ -16,37 +17,21 @@
     shapeIndex: null
   };
 
-  function randomPoints(count, width, height) {
-    const points = [];
-    for (let i = 0; i < count; i++) {
-      const x = Math.random() * width;
-      const y = Math.random() * height;
-      points.push({ x, y });
-    }
-    return points;
-  }
-
   function generateRandomPath(points) {
-    if (points.length < 2) return ''; // Not enough points to create a path
+    if (points.length < 2) return ''; 
 
     let path = `M${points[0].x},${points[0].y} `;
     for (let i = 1; i < points.length; i++) {
       path += `L${points[i].x},${points[i].y} `;
     }
-    path += 'Z'; // Close the path
+    path += 'Z'; 
     return path;
   }
 
-  function randomShape() {
-    const pointCount = Math.floor(Math.random() * 5) + 3; // Between 3 and 7 points
-    const points = randomPoints(pointCount, 500, 500); // Assuming a canvas size of 500x500
-    return generateRandomPath(points);
-  }
-
   function generateBlobPath() {
-    const numPoints = 8; // Number of points around the blob
-    const radius = 100; // Radius of the blob
-    const variance = 40; // How much to vary the points from the radius
+    const numPoints = 8; 
+    const radius = 100; 
+    const variance = 40; 
 
     const points = [];
     for (let i = 0; i < numPoints; i++) {
@@ -61,7 +46,7 @@
   }
 
   function generateCatmullRomPath(points) {
-    if (points.length < 2) return ''; // Not enough points to create a path
+    if (points.length < 2) return ''; 
 
     const path = [];
     path.push(`M${points[0].x},${points[0].y}`);
@@ -91,18 +76,16 @@
       }
     }
 
-    path.push('Z'); // Ensure the path is closed
+    path.push('Z'); 
     return path.join(' ');
   }
 
   function addShape() {
-    const shapeToAdd = svgShape === 'Random' ? randomShape() :
-      svgShape === 'Blob' ? generateBlobPath() :
-      svgShape;
+    const shapeToAdd = svgShape === 'Blob' ? generateBlobPath() : svgShape;
 
     shapes.update(items => [
       ...items,
-      { id: items.length, path: shapeToAdd, color, x: 0, y: 0, width: size, height: size }
+      { id: items.length, path: shapeToAdd, color, x: 0, y: 0, width: size, height: size, rotation: 0 }
     ]);
   }
 
@@ -152,13 +135,36 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadPNG() {
+    const svgElement = document.querySelector('.shape-preview svg');
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const png = canvas.toDataURL('image/png');
+
+      const a = document.createElement('a');
+      a.href = png;
+      a.download = 'shape.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+  }
+
   function startDrag(event, index) {
     dragState.isDragging = true;
     dragState.startX = event.clientX;
     dragState.startY = event.clientY;
     dragState.shapeIndex = index;
     selectedShapeIndex = index;
-    size = $shapes[index].width; // Set initial size for the selected shape
+    size = $shapes[index].width; 
   }
 
   function startResize(event, index) {
@@ -200,6 +206,18 @@
     dragState.isDragging = false;
     dragState.isResizing = false;
     dragState.shapeIndex = null;
+  }
+
+  function onRotationChange(event) {
+    const newRotation = Number(event.target.value);
+    if (selectedShapeIndex !== null) {
+      shapes.update(items => {
+        const updatedItems = [...items];
+        const shape = updatedItems[selectedShapeIndex];
+        shape.rotation = newRotation;
+        return updatedItems;
+      });
+    }
   }
 
   window.addEventListener('mousemove', onMouseMove);
@@ -288,34 +306,34 @@
   .btn {
     cursor: pointer;
     font-weight: bold;
-    color: #000; /* Black text color by default */
+    color: #000;
   }
 
   .btn.add {
-    background-color: #5af17d; /* Light green */
+    background-color: #5af17d; 
   }
 
   .btn.add:hover {
-    background-color: #28a745; /* Darker green */
-    color: #fff; /* White text on hover */
+    background-color: #28a745;
+    color: #fff; 
   }
 
   .btn.delete {
-    background-color: #f65868; /* Light red */
+    background-color: #f65868; 
   }
 
   .btn.delete:hover {
-    background-color: #dc3545; /* Darker red */
-    color: #fff; /* White text on hover */
+    background-color: #dc3545;
+    color: #fff; 
   }
 
   .btn.download {
-    background-color: #7baafc; /* Light blue */
+    background-color: #7baafc;
   }
 
   .btn.download:hover {
-    background-color: #007bff; /* Darker blue */
-    color: #fff; /* White text on hover */
+    background-color: #007bff; 
+    color: #fff; 
   }
 
   .resize-title {
@@ -392,8 +410,8 @@
 
   .download-options {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 5px;
+    margin-top: 5px;
   }
 </style>
 
@@ -405,19 +423,29 @@
       <label>
         Color:
         <input type="color" bind:value={color} on:input={updateColorPreview} class="hidden-color-input" />
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
         <div class="color-preview" style="background-color: {color};" on:click={triggerColorInput}></div>
       </label>
       <label>
         Shape:
         <select bind:value={svgShape}>
-          <option value="Random">Random</option>
           <option value="M150 0 L75 200 L225 200 Z">Triangle</option>
           <option value="M100,100 C150,50 200,150 250,100 C300,50 350,150 400,100">Wave</option>
           <option value="M50,50 h150 v150 h-150 Z">Square</option>
-          <option value="M100,200 Q150,50 200,200 T300,200">Arc</option>
           <option value="M250 100 A150 150 0 1 0 250 400 A150 150 0 1 0 250 100">Circle</option>
           <option value="Blob">Blob</option>
-        </select>
+          <option value="M0,0 h100 v50 h-100 Z">Rectangle</option>
+          <option value="M100 30 L170 75 L170 145 L100 190 L30 145 L30 75 Z">Hexagon</option> 
+        </select>        
+      </label>
+      <label>
+        Rotation:
+        <input type="range" min="0" max="360" bind:value={rotation} class="range-input" on:input={onRotationChange} />
+        <span>{rotation}°</span>
+      </label>      
+      <label>
+        Resize Shape:
+        <input type="range" min="10" max="500" bind:value={size} class="range-input" on:input={onSizeChange} />
       </label>
       <button class="btn add" on:click={addShape}>Add Shape</button>
       <button class="btn delete" on:click={deleteShape}>Delete Shape</button>
@@ -427,22 +455,19 @@
       {#if showDownloadOptions}
         <div class="download-options">
           <button class="btn download" on:click={downloadSVG}>SVG</button>
+          <button class="btn download" on:click={downloadPNG}>PNG</button>
         </div>
       {/if}
-      <div class="resize-title">Resize Shape</div>
-      <div class="resize-toolbar">
-        <input type="range" min="10" max="500" bind:value={size} class="range-input" on:input={onSizeChange} />
-      </div>
     </div>
   </div>
   <div class="main">
     <div class="shape-preview">
       <svg>
-        {#each $shapes as { id, path, color, x, y, width, height }, index}
-          <g transform="translate({x},{y})" class="shape" on:mousedown={(e) => startDrag(e, index)}>
-            <path d={path} fill={color} stroke="none" transform={`scale(${width / 100},${height / 100})`} />
-            <rect x={width - 10} y={height - 10} width="10" height="10" class="resize-handle" on:mousedown={(e) => startResize(e, index)} />
-          </g>
+        {#each $shapes as { id, path, color, x, y, width, height, rotation }, index}
+        <g transform="translate({x},{y}) rotate({rotation})" class="shape" on:mousedown={(e) => startDrag(e, index)}>
+        <path d={path} fill={color} stroke="none" transform={`scale(${width / 100},${height / 100})`} />
+        <rect x={width - 10} y={height - 10} width="10" height="10" class="resize-handle" on:mousedown={(e) => startResize(e, index)} />
+        </g>
         {/each}
       </svg>
     </div>
